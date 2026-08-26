@@ -3,17 +3,24 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useChat } from '@tanstack/ai-react'
 import { chatFn } from '@/lib/chat.functions'
 import { MessageList } from '@/components/MessageList'
+import { ProviderPicker } from '@/components/ProviderPicker'
+import { DEFAULT_PROVIDER, type ProviderId } from '@/lib/providers'
 
 export const Route = createFileRoute('/')({ component: ChatPage })
 
 function ChatPage() {
   const [input, setInput] = useState('')
+  const [provider, setProvider] = useState<ProviderId>(DEFAULT_PROVIDER)
 
   // `fetcher` hands the chat client a function that returns an SSE Response.
   // This is the documented alternative to `connection: fetchServerSentEvents(url)`
   // and is what lets the transport be a server function rather than a route.
+  //
+  // `provider` is read inside the fetcher body, so each request picks up the
+  // current value. useChat does not memoize the fetcher against it.
   const { messages, sendMessage, isLoading, error, stop } = useChat({
-    fetcher: ({ messages }, { signal }) => chatFn({ data: { messages }, signal }),
+    fetcher: ({ messages }, { signal }) =>
+      chatFn({ data: { messages, provider }, signal }),
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -25,8 +32,9 @@ function ChatPage() {
 
   return (
     <div className="flex h-screen flex-col bg-gray-950 text-gray-100">
-      <header className="border-b border-gray-800 px-4 py-3">
+      <header className="flex items-center justify-between border-b border-gray-800 px-4 py-3">
         <h1 className="text-lg font-semibold">TanStack AI × Strapi</h1>
+        <ProviderPicker value={provider} onChange={setProvider} disabled={isLoading} />
       </header>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
