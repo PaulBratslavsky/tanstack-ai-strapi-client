@@ -1,4 +1,5 @@
 import type { UIMessage } from '@tanstack/ai'
+import { Markdown } from '@/components/Markdown'
 
 /**
  * Renders one message part.
@@ -18,17 +19,24 @@ import type { UIMessage } from '@tanstack/ai'
  * reached for a tool rather than answering from memory. That distinction is the
  * whole point of the MCP demo: a fluent answer proves nothing on its own.
  */
-function Part({ part }: { part: any }) {
+function Part({ part, role }: { part: any; role: string }) {
   if (part.type === 'text') {
-    return <span className="whitespace-pre-wrap">{part.content}</span>
+    // Markdown only for model output. A user's own message is rendered as typed
+    // — nobody expects their *asterisks* to silently become italics, and their
+    // text was never Markdown to begin with.
+    return role === 'user' ? (
+      <span className="whitespace-pre-wrap">{part.content}</span>
+    ) : (
+      <Markdown>{part.content}</Markdown>
+    )
   }
 
   if (part.type === 'thinking') {
     return (
       <details className="my-1 text-xs text-gray-400">
         <summary className="cursor-pointer select-none">thinking</summary>
-        <div className="mt-1 whitespace-pre-wrap border-l border-gray-700 pl-2">
-          {part.content}
+        <div className="mt-1 border-l border-gray-700 pl-2">
+          <Markdown>{part.content}</Markdown>
         </div>
       </details>
     )
@@ -98,11 +106,11 @@ export function MessageList({ messages }: { messages: Array<UIMessage> }) {
           className={
             m.role === 'user'
               ? 'ml-auto max-w-2xl rounded-lg border border-cyan-600/40 bg-cyan-700/20 px-3 py-2'
-              : 'mr-auto max-w-2xl rounded-lg border border-gray-700 bg-gray-800 px-3 py-2'
+              : 'mr-auto max-w-3xl rounded-lg border border-gray-700 bg-gray-800 px-3 py-2'
           }
         >
           {m.parts.map((part, i) => (
-            <Part key={i} part={part} />
+            <Part key={i} part={part} role={m.role} />
           ))}
         </div>
       ))}
