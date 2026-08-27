@@ -4,30 +4,30 @@ import { useChat } from '@tanstack/ai-react'
 import { chatFn } from '@/lib/chat.functions'
 import { MessageList } from '@/components/MessageList'
 import { ProviderPicker } from '@/components/ProviderPicker'
-import { DEFAULT_PROVIDER, type ProviderId } from '@/lib/providers'
+import { DEFAULT_MODEL_TOKEN } from '@/lib/model-token'
 import { McpConnectors, McpStatusBar } from '@/components/McpConnectors'
 
 export const Route = createFileRoute('/')({ component: ChatPage })
 
 function ChatPage() {
   const [input, setInput] = useState('')
-  const [provider, setProvider] = useState<ProviderId>(DEFAULT_PROVIDER)
+  const [model, setModel] = useState<string>(DEFAULT_MODEL_TOKEN)
   const [mcpOpen, setMcpOpen] = useState(false)
 
   // `fetcher` hands the chat client a function that returns an SSE Response.
   // This is the documented alternative to `connection: fetchServerSentEvents(url)`
   // and is what lets the transport be a server function rather than a route.
   //
-  // `provider` arrives as a PARAMETER on `input.data`, not as a captured
-  // variable. useChat holds its options object from the first render, so a
-  // fetcher closing over `provider` sends the INITIAL value forever — the
-  // picker changes the UI and nothing else, silently, with no error. Passing it
+  // `model` arrives as a PARAMETER on `input.data`, not as a captured variable.
+  // useChat holds its options object from the first render, so a fetcher
+  // closing over `model` would send the INITIAL value forever — the picker
+  // changes the UI and nothing else, silently, with no error. Passing it
   // per-send via `sendMessage(content, { body })` removes the failure mode
   // rather than working around it: there is nothing captured to go stale.
   const { messages, sendMessage, isLoading, error, stop } = useChat({
     fetcher: ({ messages, data }, { signal }) =>
       chatFn({
-        data: { messages, provider: data?.provider as string | undefined },
+        data: { messages, model: data?.model as string | undefined },
         signal,
       }),
   })
@@ -37,7 +37,7 @@ function ChatPage() {
     if (!input.trim() || isLoading) return
     // `body` is merged into the request's forwardedProps, which the chat
     // client mirrors onto the fetcher's `input.data`.
-    void sendMessage(input, { body: { provider } })
+    void sendMessage(input, { body: { model } })
     setInput('')
   }
 
@@ -49,7 +49,7 @@ function ChatPage() {
           <h1 className="text-lg font-semibold">TanStack AI × Strapi</h1>
           <McpStatusBar onOpen={() => setMcpOpen(true)} />
         </div>
-        <ProviderPicker value={provider} onChange={setProvider} disabled={isLoading} />
+        <ProviderPicker value={model} onChange={setModel} disabled={isLoading} />
       </header>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">

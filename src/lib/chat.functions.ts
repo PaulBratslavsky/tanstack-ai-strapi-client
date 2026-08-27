@@ -2,12 +2,13 @@ import { createServerFn } from '@tanstack/react-start'
 import { chat, maxIterations, toServerSentEventsResponse } from '@tanstack/ai'
 import type { UIMessage } from '@tanstack/ai'
 import { createMCPClients } from '@tanstack/ai-mcp'
-import { resolveTextAdapter } from './adapters.server'
+import { resolveAdapter } from './adapters.server'
 import { buildPoolConfig } from './mcp-servers.server'
 
 export interface ChatFnInput {
   messages: Array<UIMessage>
-  provider?: string
+  /** Model CHOICE TOKEN — `anthropic:<id>` or `local:<id>`. Never a bare id. */
+  model?: string
 }
 
 /**
@@ -22,6 +23,12 @@ export interface ChatFnInput {
 export const chatFn = createServerFn({ method: 'POST' })
   .validator((data: ChatFnInput) => data)
   .handler(async ({ data }) => {
+    // Resolve the model first: an uninstalled or unknown token is refused
+    // here, with a notice, rather than silently answered by something else.
+    const { adapter, modelId, notice } = await resolveAdapter(data.model)
+    if (notice) console.warn(`[chat] ${notice}`)
+    console.log(`[chat] answering with ${modelId}`)
+
     const poolConfig = buildPoolConfig()
     const hasServers = Object.keys(poolConfig).length > 0
 
@@ -31,7 +38,7 @@ export const chatFn = createServerFn({ method: 'POST' })
     const pool = hasServers ? await createMCPClients(poolConfig) : null
 
     const stream = chat({
-      adapter: resolveTextAdapter(data.provider),
+      adapter,
       messages: data.messages as any,
       ...(pool
         ? {
