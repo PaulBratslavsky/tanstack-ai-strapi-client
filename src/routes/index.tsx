@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useChat } from '@tanstack/ai-react'
 import { chatFn } from '@/lib/chat.functions'
@@ -12,17 +12,21 @@ export const Route = createFileRoute('/')({ component: ChatPage })
 function ChatPage() {
   const [input, setInput] = useState('')
   const [provider, setProvider] = useState<ProviderId>(DEFAULT_PROVIDER)
+
+  // useChat captures its options object on first render, so a fetcher that
+  // closes over `provider` would send the INITIAL value forever — switching the
+  // picker changed the UI but not the request. A ref is read at call time, so
+  // the fetcher always sees the current selection.
+  const providerRef = useRef<ProviderId>(provider)
+  providerRef.current = provider
   const [mcpOpen, setMcpOpen] = useState(false)
 
   // `fetcher` hands the chat client a function that returns an SSE Response.
   // This is the documented alternative to `connection: fetchServerSentEvents(url)`
   // and is what lets the transport be a server function rather than a route.
-  //
-  // `provider` is read inside the fetcher body, so each request picks up the
-  // current value. useChat does not memoize the fetcher against it.
   const { messages, sendMessage, isLoading, error, stop } = useChat({
     fetcher: ({ messages }, { signal }) =>
-      chatFn({ data: { messages, provider }, signal }),
+      chatFn({ data: { messages, provider: providerRef.current }, signal }),
   })
 
   const handleSubmit = (e: React.FormEvent) => {

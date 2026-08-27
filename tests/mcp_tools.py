@@ -31,24 +31,29 @@ with sync_playwright() as p:
     box.press_sequentially(PROMPT, delay=5)
     page.wait_for_selector('button[type="submit"]:not([disabled])', timeout=10000)
     box.press("Enter")
+    start = time.time()
 
     # Tool blocks are the amber font-mono divs rendered by MessageList's Part().
     tool_blocks = page.locator("div.font-mono, details.font-mono")
     assistant = page.locator("div.mr-auto")
 
-    deadline = time.time() + 150
+    # Completion signal: isLoading flips false, so the Stop button is replaced
+    # by Send. A "text stopped changing" heuristic fires prematurely on
+    # reasoning models that emit a long thinking block before any output.
+    deadline = time.time() + 300
     last = ""
-    stable_since = None
     while time.time() < deadline:
         try:
             cur = assistant.last.inner_text() if assistant.count() else ""
         except Exception:
             cur = last
-        if cur != last:
-            last, stable_since = cur, time.time()
-        elif stable_since and time.time() - stable_since > 4 and cur:
+        if cur:
+            last = cur
+        done = page.locator('button[type="submit"]').count() > 0
+        if done and time.time() > start + 3:
             break
         time.sleep(0.5)
+    print(f"=== wall_clock={round(time.time() - start)}s ===")
 
     n = tool_blocks.count()
     print(f"=== tool blocks rendered: {n} ===")
