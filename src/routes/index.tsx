@@ -5,13 +5,14 @@ import { chatFn } from '@/lib/chat.functions'
 import { MessageList } from '@/components/MessageList'
 import { ProviderPicker } from '@/components/ProviderPicker'
 import { DEFAULT_PROVIDER, type ProviderId } from '@/lib/providers'
-import { McpStatus } from '@/components/McpStatus'
+import { McpConnectors, McpStatusBar } from '@/components/McpConnectors'
 
 export const Route = createFileRoute('/')({ component: ChatPage })
 
 function ChatPage() {
   const [input, setInput] = useState('')
   const [provider, setProvider] = useState<ProviderId>(DEFAULT_PROVIDER)
+  const [mcpOpen, setMcpOpen] = useState(false)
 
   // `fetcher` hands the chat client a function that returns an SSE Response.
   // This is the documented alternative to `connection: fetchServerSentEvents(url)`
@@ -33,10 +34,11 @@ function ChatPage() {
 
   return (
     <div className="flex h-screen flex-col bg-gray-950 text-gray-100">
+      <McpConnectors open={mcpOpen} onClose={() => setMcpOpen(false)} />
       <header className="flex items-center justify-between border-b border-gray-800 px-4 py-3">
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-semibold">TanStack AI × Strapi</h1>
-          <McpStatus />
+          <McpStatusBar onOpen={() => setMcpOpen(true)} />
         </div>
         <ProviderPicker value={provider} onChange={setProvider} disabled={isLoading} />
       </header>

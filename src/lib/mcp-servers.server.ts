@@ -1,33 +1,25 @@
 import type { HttpTransportConfig } from '@tanstack/ai-mcp'
 import { createOAuthProvider } from './mcp-oauth-provider.server'
 import { hasTokens } from './mcp-oauth-store.server'
+import { listServers, type McpServerRecord } from './mcp-registry.server'
 
 /**
- * MCP server configuration, driven by environment and stored credentials.
+ * Turns registry records into a createMCPClients() pool config.
  *
- * `.server.ts`: reads bearer tokens and OAuth state. None of this may reach the
- * browser — STRAPI_MCP_TOKEN grants content-manager CRUD on the Strapi instance.
+ * `.server.ts`: reads bearer tokens and OAuth state. None of it may reach the
+ * browser.
  *
- * Config keys are meaningful: createMCPClients() prefixes each server's tools
- * with its key, so Strapi's `list_article` becomes `strapi_list_article` and the
- * docs server's search becomes `docs_*`. That prefixing prevents
- * MCPDuplicateToolNameError when two servers expose the same tool name.
+ * Pool keys are the record's `key`, and createMCPClients() prefixes each
+ * server's tools with it — so a server keyed `strapi` exposes
+ * `strapi_list_article`. That prefixing is what prevents
+ * MCPDuplicateToolNameError between servers sharing a tool name.
  *
- * Two auth styles coexist here deliberately, because real MCP deployments use
- * both:
- *   - `strapi` — static bearer, from an admin API token in the environment.
- *   - `docs`   — OAuth 2.1 via `authProvider`. TanStack AI passes the provider
- *                to the SDK transport, which attaches and refreshes tokens and
- *                retries 401s with no further wiring.
+ * Three auth kinds are supported because real MCP deployments use all three:
+ *   none   — public server, no credentials
+ *   bearer — static token in a header (e.g. a Strapi admin API token)
+ *   oauth  — OAuth 2.1 via `authProvider`; TanStack AI hands the provider to
+ *            the SDK transport, which attaches/refreshes tokens and retries 401s
  */
-
-/** OAuth-protected MCP servers, keyed by pool key. */
-export const OAUTH_SERVERS: Record<string, { url: string; label: string }> = {
-  docs: {
-    url: process.env.DOCS_MCP_URL ?? 'https://strapi-docs.mcp.kapa.ai',
-    label: 'Strapi Docs',
-  },
-}
 
 /** Public origin of this app, used to build the OAuth redirect URI. */
 export function appBaseUrl(): string {
@@ -35,70 +27,62 @@ export function appBaseUrl(): string {
 }
 
 export interface McpServerDescription {
+  id: string
   key: string
   label: string
+  url: string
+  auth: McpServerRecord['auth']
+  enabled: boolean
   /** Present when the server is ready to connect. */
   transport?: HttpTransportConfig
   /** Why the server is not connectable, when it is not. */
   skipped?: string
-  /** True when the server authenticates via OAuth rather than a static token. */
-  oauth?: boolean
+}
+
+function transportFor(s: McpServerRecord): HttpTransportConfig | undefined {
+  if (s.auth === 'none') {
+    return { type: 'http', url: s.url, ...(s.headers ? { headers: s.headers } : {}) }
+  }
+  if (s.auth === 'bearer') {
+    if (!s.token) return undefined
+    return {
+      type: 'http',
+      url: s.url,
+      headers: { Authorization: `Bearer ${s.token}`, ...(s.headers ?? {}) },
+    }
+  }
+  // oauth: only join the pool once tokens exist. Handing the SDK an
+  // authProvider with no tokens makes it attempt an interactive redirect
+  // during a chat request, which cannot succeed from a server function.
+  if (!hasTokens(s.id)) return undefined
+  return {
+    type: 'http',
+    url: s.url,
+    authProvider: createOAuthProvider(s.id, appBaseUrl()),
+    ...(s.headers ? { headers: s.headers } : {}),
+  }
+}
+
+function skipReason(s: McpServerRecord): string {
+  if (!s.enabled) return 'Disabled.'
+  if (s.auth === 'bearer') return 'No bearer token saved for this server.'
+  if (s.auth === 'oauth') return 'Not connected. Authorize this server to add its tools.'
+  return 'Not connectable.'
 }
 
 export function describeServers(): Array<McpServerDescription> {
-  const out: Array<McpServerDescription> = []
-
-  // --- Strapi: static bearer -------------------------------------------------
-  const strapiUrl = process.env.STRAPI_MCP_URL ?? 'http://localhost:1350/mcp'
-  const strapiToken = process.env.STRAPI_MCP_TOKEN
-  out.push(
-    strapiToken
-      ? {
-          key: 'strapi',
-          label: 'Strapi',
-          transport: {
-            type: 'http',
-            url: strapiUrl,
-            headers: { Authorization: `Bearer ${strapiToken}` },
-          },
-        }
-      : {
-          key: 'strapi',
-          label: 'Strapi',
-          skipped:
-            'STRAPI_MCP_TOKEN not set. Mint an ADMIN-kind token with ' +
-            'strapi-backend/scripts/mint-mcp-token.js — a content token from ' +
-            'Settings > API Tokens will 401 against /mcp.',
-        },
-  )
-
-  // --- Docs: OAuth 2.1 via authProvider -------------------------------------
-  // Only joins the pool once tokens exist. Handing the SDK an authProvider with
-  // no tokens would make it attempt an interactive redirect during a chat
-  // request, which cannot succeed from a server function.
-  for (const [key, server] of Object.entries(OAUTH_SERVERS)) {
-    if (hasTokens(key)) {
-      out.push({
-        key,
-        label: server.label,
-        oauth: true,
-        transport: {
-          type: 'http',
-          url: server.url,
-          authProvider: createOAuthProvider(key, appBaseUrl()),
-        },
-      })
-    } else {
-      out.push({
-        key,
-        label: server.label,
-        oauth: true,
-        skipped: 'Not connected. Authorize this server to add its tools.',
-      })
+  return listServers().map((s) => {
+    const transport = s.enabled ? transportFor(s) : undefined
+    return {
+      id: s.id,
+      key: s.key,
+      label: s.label,
+      url: s.url,
+      auth: s.auth,
+      enabled: s.enabled,
+      ...(transport ? { transport } : { skipped: skipReason(s) }),
     }
-  }
-
-  return out
+  })
 }
 
 /** Only the servers that are actually connectable, shaped for createMCPClients(). */

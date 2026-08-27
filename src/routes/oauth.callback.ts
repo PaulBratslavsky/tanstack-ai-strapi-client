@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { createOAuthProvider, createOAuthTransport } from '@/lib/mcp-oauth-provider.server'
 import { findServerByState, patchServerState } from '@/lib/mcp-oauth-store.server'
-import { OAUTH_SERVERS, appBaseUrl } from '@/lib/mcp-servers.server'
+import { appBaseUrl } from '@/lib/mcp-servers.server'
+import { getServer } from '@/lib/mcp-registry.server'
 
 /**
  * OAuth redirect target. A server ROUTE, not a server function: this endpoint
@@ -33,10 +34,10 @@ export const Route = createFileRoute('/oauth/callback')({
           return html(400, 'Missing parameters', 'The callback had no <code>code</code> or <code>state</code>.')
         }
 
-        // `state` tells us which server this callback belongs to, and proves the
-        // flow was started by us.
-        const serverKey = findServerByState(state)
-        if (!serverKey) {
+        // `state` tells us which registered server this callback belongs to,
+        // and proves the flow was started by us.
+        const serverId = findServerByState(state)
+        if (!serverId) {
           return html(
             400,
             'Unrecognized state',
@@ -44,18 +45,18 @@ export const Route = createFileRoute('/oauth/callback')({
           )
         }
 
-        const server = OAUTH_SERVERS[serverKey]
+        const server = getServer(serverId)
         if (!server) {
-          return html(400, 'Unknown server', `No MCP server configured for "${escapeHtml(serverKey)}".`)
+          return html(400, 'Unknown server', `No MCP server registered with id "${escapeHtml(serverId)}".`)
         }
 
         try {
-          const provider = createOAuthProvider(serverKey, appBaseUrl())
+          const provider = createOAuthProvider(serverId, appBaseUrl())
           const transport = createOAuthTransport(server.url, provider)
           await transport.finishAuth(code)
           await transport.close()
           // One-shot values; clearing them stops a replayed callback working.
-          patchServerState(serverKey, { codeVerifier: undefined, state: undefined })
+          patchServerState(serverId, { codeVerifier: undefined, state: undefined })
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err)
           return html(500, 'Token exchange failed', `<code>${escapeHtml(message)}</code>`)
@@ -64,7 +65,7 @@ export const Route = createFileRoute('/oauth/callback')({
         return html(
           200,
           'Connected',
-          `<strong>${escapeHtml(serverKey)}</strong> is authorized. You can close this tab and return to the app.`,
+          `<strong>${escapeHtml(server.label)}</strong> is authorized. You can close this tab and return to the app.`,
           true,
         )
       },

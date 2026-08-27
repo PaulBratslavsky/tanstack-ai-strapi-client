@@ -14,3 +14,6 @@ todos.json
 
 # MCP OAuth token store (contains refresh tokens)
 .mcp-oauth.json
+
+# UI-managed MCP server registry (contains bearer tokens)
+.mcp-servers.json

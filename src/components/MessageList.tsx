@@ -1,32 +1,84 @@
 import type { UIMessage } from '@tanstack/ai'
 
 /**
- * Renders a single message part.
+ * Renders one message part.
  *
- * UIMessage.parts is a discriminated union. Text parts carry `content`; tool
- * parts carry a tool name and arguments/results. We render tool parts visibly
- * so it is obvious when the model reached for Strapi or the docs rather than
- * answering from memory — the whole point of the MCP demo.
+ * UIMessage.parts is a discriminated union. The shapes that matter here, from
+ * @tanstack/ai-client's types:
+ *
+ *   { type: 'text',        content }
+ *   { type: 'thinking',    content }
+ *   { type: 'tool-call',   name, arguments: string, input?, state, output? }
+ *   { type: 'tool-result', name?, toolCallId, content, state, error? }
+ *
+ * Note `arguments` is a JSON *string*, and the discriminant is `name` — not
+ * `toolName`, which is what a first pass naturally reaches for.
+ *
+ * Tool activity is rendered visibly so it is obvious when the model actually
+ * reached for a tool rather than answering from memory. That distinction is the
+ * whole point of the MCP demo: a fluent answer proves nothing on its own.
  */
 function Part({ part }: { part: any }) {
   if (part.type === 'text') {
     return <span className="whitespace-pre-wrap">{part.content}</span>
   }
 
-  // Tool-related part names vary across versions ('tool-call', 'tool-result',
-  // 'tool'); match on the prefix so all of them render.
-  if (typeof part.type === 'string' && part.type.startsWith('tool')) {
-    const name = part.toolName ?? part.name ?? 'tool'
-    const args = part.args ?? part.input
+  if (part.type === 'thinking') {
+    return (
+      <details className="my-1 text-xs text-gray-400">
+        <summary className="cursor-pointer select-none">thinking</summary>
+        <div className="mt-1 whitespace-pre-wrap border-l border-gray-700 pl-2">
+          {part.content}
+        </div>
+      </details>
+    )
+  }
+
+  if (part.type === 'tool-call') {
+    // `arguments` is a JSON string; fall back to `input` when it is absent.
+    let args = part.input
+    if (args === undefined && typeof part.arguments === 'string') {
+      try {
+        args = JSON.parse(part.arguments)
+      } catch {
+        args = part.arguments
+      }
+    }
     return (
       <div className="my-1 rounded border border-amber-700/50 bg-amber-900/20 px-2 py-1 font-mono text-xs text-amber-200">
-        <span className="font-semibold">⚙ {name}</span>
-        {args ? (
+        <span className="font-semibold">⚙ {part.name}</span>
+        {part.state && part.state !== 'complete' && (
+          <span className="ml-2 text-amber-400/70">{part.state}</span>
+        )}
+        {args !== undefined && (
           <pre className="mt-1 overflow-x-auto whitespace-pre-wrap text-amber-300/80">
-            {JSON.stringify(args, null, 2)}
+            {typeof args === 'string' ? args : JSON.stringify(args, null, 2)}
           </pre>
-        ) : null}
+        )}
       </div>
+    )
+  }
+
+  if (part.type === 'tool-result') {
+    const failed = part.state === 'error'
+    const body =
+      typeof part.content === 'string' ? part.content : JSON.stringify(part.content)
+    return (
+      <details
+        className={`my-1 rounded border px-2 py-1 font-mono text-xs ${
+          failed
+            ? 'border-red-700/50 bg-red-900/20 text-red-200'
+            : 'border-emerald-800/50 bg-emerald-900/15 text-emerald-200'
+        }`}
+      >
+        <summary className="cursor-pointer select-none font-semibold">
+          {failed ? '✗' : '✓'} {part.name ?? 'result'}
+          {failed && part.error ? ` — ${part.error}` : ''}
+        </summary>
+        <pre className="mt-1 max-h-56 overflow-auto whitespace-pre-wrap opacity-80">
+          {body?.slice(0, 4000)}
+        </pre>
+      </details>
     )
   }
 
