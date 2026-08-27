@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useChat } from '@tanstack/ai-react'
 import { chatFn } from '@/lib/chat.functions'
@@ -12,27 +12,32 @@ export const Route = createFileRoute('/')({ component: ChatPage })
 function ChatPage() {
   const [input, setInput] = useState('')
   const [provider, setProvider] = useState<ProviderId>(DEFAULT_PROVIDER)
-
-  // useChat captures its options object on first render, so a fetcher that
-  // closes over `provider` would send the INITIAL value forever — switching the
-  // picker changed the UI but not the request. A ref is read at call time, so
-  // the fetcher always sees the current selection.
-  const providerRef = useRef<ProviderId>(provider)
-  providerRef.current = provider
   const [mcpOpen, setMcpOpen] = useState(false)
 
   // `fetcher` hands the chat client a function that returns an SSE Response.
   // This is the documented alternative to `connection: fetchServerSentEvents(url)`
   // and is what lets the transport be a server function rather than a route.
+  //
+  // `provider` arrives as a PARAMETER on `input.data`, not as a captured
+  // variable. useChat holds its options object from the first render, so a
+  // fetcher closing over `provider` sends the INITIAL value forever — the
+  // picker changes the UI and nothing else, silently, with no error. Passing it
+  // per-send via `sendMessage(content, { body })` removes the failure mode
+  // rather than working around it: there is nothing captured to go stale.
   const { messages, sendMessage, isLoading, error, stop } = useChat({
-    fetcher: ({ messages }, { signal }) =>
-      chatFn({ data: { messages, provider: providerRef.current }, signal }),
+    fetcher: ({ messages, data }, { signal }) =>
+      chatFn({
+        data: { messages, provider: data?.provider as string | undefined },
+        signal,
+      }),
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim() || isLoading) return
-    void sendMessage(input)
+    // `body` is merged into the request's forwardedProps, which the chat
+    // client mirrors onto the fetcher's `input.data`.
+    void sendMessage(input, { body: { provider } })
     setInput('')
   }
 

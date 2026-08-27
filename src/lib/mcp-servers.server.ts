@@ -23,7 +23,7 @@ import { listServers, type McpServerRecord } from './mcp-registry.server'
 
 /** Public origin of this app, used to build the OAuth redirect URI. */
 export function appBaseUrl(): string {
-  return process.env.APP_BASE_URL ?? 'http://localhost:3000'
+  return process.env.APP_BASE_URL ?? 'http://localhost:3020'
 }
 
 export interface McpServerDescription {

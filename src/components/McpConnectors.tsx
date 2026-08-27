@@ -13,7 +13,7 @@ import type { McpAuthKind } from '@/lib/mcp-registry.server'
 /** Presets so common servers are one click, without hardcoding them anywhere else. */
 const PRESETS = [
   { label: 'Strapi Docs', url: 'https://strapi-docs.mcp.kapa.ai', auth: 'oauth' as McpAuthKind },
-  { label: 'Strapi', url: 'http://localhost:1350/mcp', auth: 'bearer' as McpAuthKind },
+  { label: 'Strapi', url: 'http://localhost:1360/mcp', auth: 'bearer' as McpAuthKind },
 ]
 
 export function McpConnectors({ open, onClose }: { open: boolean; onClose: () => void }) {

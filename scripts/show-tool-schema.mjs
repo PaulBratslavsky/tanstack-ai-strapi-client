@@ -1,5 +1,5 @@
 import { createMCPClient } from '@tanstack/ai-mcp'
-const url = process.env.STRAPI_MCP_URL ?? 'http://localhost:1350/mcp'
+const url = process.env.STRAPI_MCP_URL ?? 'http://localhost:1360/mcp'
 const client = await createMCPClient({
   transport: { type: 'http', url, headers: { Authorization: `Bearer ${process.env.STRAPI_MCP_TOKEN}` } },
 })

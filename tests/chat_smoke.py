@@ -2,7 +2,7 @@
 import sys, time
 from playwright.sync_api import sync_playwright
 
-URL = "http://localhost:3000"
+URL = "http://localhost:3020"
 PROMPT = sys.argv[1] if len(sys.argv) > 1 else "Explain what MCP is in two sentences."
 PROVIDER = sys.argv[2] if len(sys.argv) > 2 else None
 
@@ -23,12 +23,12 @@ with sync_playwright() as p:
     # the Send button disabled. The MCP status strip resolving from
     # "checking MCP..." proves hydration ran AND that getMcpStatusFn round-trips.
     page.wait_for_function(
-        "() => { const h = document.querySelector('header'); return h && !h.innerText.includes('checking MCP'); }",
+        "() => { const hs=[...document.querySelectorAll('header')]; const h=hs.find(x=>x.innerText.includes('TanStack AI')); return h && !h.innerText.includes('checking MCP'); }",
         timeout=30000,
     )
 
     print("=== MCP status strip ===")
-    print(page.locator("header").first.inner_text().replace("\n", " | "))
+    print(page.locator("header").filter(has_text="TanStack AI").first.inner_text().replace("\n", " | "))
 
     if PROVIDER:
         page.locator("select").select_option(PROVIDER)

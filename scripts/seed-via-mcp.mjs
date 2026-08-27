@@ -3,7 +3,7 @@
 // Run: node --env-file=.env scripts/seed-via-mcp.mjs
 import { createMCPClient } from '@tanstack/ai-mcp'
 
-const url = process.env.STRAPI_MCP_URL ?? 'http://localhost:1350/mcp'
+const url = process.env.STRAPI_MCP_URL ?? 'http://localhost:1360/mcp'
 const token = process.env.STRAPI_MCP_TOKEN
 if (!token) throw new Error('STRAPI_MCP_TOKEN not set')
 

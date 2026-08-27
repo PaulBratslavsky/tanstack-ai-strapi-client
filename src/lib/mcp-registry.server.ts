@@ -101,7 +101,7 @@ function seedFromEnvIfEmpty(): Array<McpServerRecord> {
     id: randomUUID(),
     key: 'strapi',
     label: 'Strapi',
-    url: process.env.STRAPI_MCP_URL ?? 'http://localhost:1350/mcp',
+    url: process.env.STRAPI_MCP_URL ?? 'http://localhost:1360/mcp',
     auth: 'bearer',
     token,
     enabled: true,
@@ -111,8 +111,35 @@ function seedFromEnvIfEmpty(): Array<McpServerRecord> {
   return [seeded]
 }
 
+/**
+ * Keep the env-seeded entry's URL in step with the environment.
+ *
+ * The registry persists to disk, so once seeded it becomes the source of truth
+ * and a later STRAPI_MCP_URL change would never reach it — the entry keeps
+ * pointing at the old host and simply reads as "offline", which looks like a
+ * dead server rather than stale config. (Observed: moving Strapi 1350 -> 1360
+ * left the seeded record on 1350, which by then belonged to a DIFFERENT
+ * project's Strapi. A stale entry can point at someone else's data, not just
+ * at nothing.)
+ *
+ * Only `builtIn` entries are reconciled. A server the user added or edited is
+ * theirs; env must not silently rewrite it.
+ */
+function reconcileBuiltInUrl(rows: Array<McpServerRecord>): Array<McpServerRecord> {
+  const envUrl = process.env.STRAPI_MCP_URL
+  if (!envUrl) return rows
+
+  const i = rows.findIndex((r) => r.builtIn && r.key === 'strapi')
+  if (i === -1 || rows[i].url === envUrl) return rows
+
+  const next = [...rows]
+  next[i] = { ...next[i], url: envUrl }
+  write(next)
+  return next
+}
+
 export function listServers(): Array<McpServerRecord> {
-  return seedFromEnvIfEmpty()
+  return reconcileBuiltInUrl(seedFromEnvIfEmpty())
 }
 
 export function getServer(id: string): McpServerRecord | undefined {
