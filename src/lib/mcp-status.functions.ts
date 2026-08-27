@@ -9,6 +9,8 @@ export interface McpServerStatus {
   toolCount: number
   toolNames: Array<string>
   error?: string
+  /** True when this server authenticates via OAuth (offer a connect button). */
+  oauth?: boolean
 }
 
 /**
@@ -37,6 +39,7 @@ export const getMcpStatusFn = createServerFn({ method: 'GET' }).handler(
             toolCount: 0,
             toolNames: [],
             error: s.skipped ?? 'not configured',
+            oauth: s.oauth,
           }
         }
         try {
@@ -49,6 +52,7 @@ export const getMcpStatusFn = createServerFn({ method: 'GET' }).handler(
               ok: true,
               toolCount: tools.length,
               toolNames: tools.map((t: any) => t.name).slice(0, 60),
+              oauth: s.oauth,
             }
           } finally {
             await pool.close()
@@ -61,6 +65,7 @@ export const getMcpStatusFn = createServerFn({ method: 'GET' }).handler(
             toolCount: 0,
             toolNames: [],
             error: error instanceof Error ? error.message : String(error),
+            oauth: s.oauth,
           }
         }
       }),
