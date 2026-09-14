@@ -254,22 +254,29 @@ export function McpStatusBar({ onOpen }: { onOpen: () => void }) {
       ) : servers.length === 0 ? (
         <span className="text-gray-500">no MCP servers</span>
       ) : (
+        // One entry per configured server. The number is how many TOOLS that
+        // server offers, spelled out: a bare "strapi (11)" read as the server
+        // being listed eleven times. Each entry opens the panel, which is where
+        // a server is disabled or removed.
         servers.map((s) => (
-          <span
+          <button
             key={s.id}
+            onClick={onOpen}
             title={s.connected ? s.toolNames.join(', ') : s.error}
-            className={s.connected ? 'text-emerald-400' : 'text-gray-500'}
+            className={`rounded px-1 hover:bg-gray-800 ${s.connected ? 'text-emerald-400' : 'text-gray-500'}`}
           >
-            {s.connected ? '●' : '○'} {s.key}
-            {s.connected ? ` (${s.toolCount})` : ' —'}
-          </span>
+            {s.connected ? '●' : '○'} {s.label}
+            <span className="text-gray-500">
+              {s.connected ? ` · ${s.toolCount} ${s.toolCount === 1 ? 'tool' : 'tools'}` : ' · offline'}
+            </span>
+          </button>
         ))
       )}
       <button
         onClick={onOpen}
         className="rounded border border-gray-700 px-2 py-0.5 text-gray-300 hover:bg-gray-800"
       >
-        + MCP
+        Manage MCP servers
       </button>
     </div>
   )
