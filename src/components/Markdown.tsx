@@ -30,10 +30,10 @@ export function Markdown({ children }: { children: string }) {
         remarkPlugins={[remarkGfm]}
         components={{
           p: (p) => <p className="my-2 first:mt-0 last:mb-0 leading-relaxed" {...p} />,
-          h1: (p) => <h2 className="mt-4 mb-2 text-base font-semibold first:mt-0" {...p} />,
-          h2: (p) => <h3 className="mt-4 mb-2 text-base font-semibold first:mt-0" {...p} />,
-          h3: (p) => <h4 className="mt-3 mb-1.5 text-sm font-semibold first:mt-0" {...p} />,
-          h4: (p) => <h5 className="mt-3 mb-1.5 text-sm font-semibold first:mt-0" {...p} />,
+          h1: (p) => <h2 className="mt-5 mb-2 text-2xl font-semibold first:mt-0" {...p} />,
+          h2: (p) => <h3 className="mt-5 mb-2 text-xl font-semibold first:mt-0" {...p} />,
+          h3: (p) => <h4 className="mt-4 mb-2 text-lg font-semibold first:mt-0" {...p} />,
+          h4: (p) => <h5 className="mt-4 mb-2 text-lg font-semibold first:mt-0" {...p} />,
           ul: (p) => <ul className="my-2 list-disc space-y-1 pl-5" {...p} />,
           ol: (p) => <ol className="my-2 list-decimal space-y-1 pl-5" {...p} />,
           li: (p) => <li className="leading-relaxed" {...p} />,
@@ -63,20 +63,20 @@ export function Markdown({ children }: { children: string }) {
           ),
           pre: (p) => (
             <pre
-              className="my-2 overflow-x-auto rounded-lg border border-gray-700 bg-gray-950 p-3 font-mono text-xs leading-relaxed [&>code]:border-0 [&>code]:bg-transparent [&>code]:p-0 [&>code]:text-gray-200"
+              className="my-2 overflow-x-auto rounded-lg border border-gray-700 bg-gray-950 p-4 font-mono text-base leading-relaxed [&>code]:border-0 [&>code]:bg-transparent [&>code]:p-0 [&>code]:text-gray-200"
               {...p}
             />
           ),
           table: (p) => (
             <div className="my-2 overflow-x-auto rounded-lg border border-gray-700">
-              <table className="w-full border-collapse text-xs" {...p} />
+              <table className="w-full border-collapse text-base" {...p} />
             </div>
           ),
           thead: (p) => <thead className="bg-gray-900/60" {...p} />,
           th: (p) => (
-            <th className="border-b border-gray-700 px-2.5 py-1.5 text-left font-semibold" {...p} />
+            <th className="border-b border-gray-700 px-3 py-2 text-left font-semibold" {...p} />
           ),
-          td: (p) => <td className="border-b border-gray-800 px-2.5 py-1.5 align-top" {...p} />,
+          td: (p) => <td className="border-b border-gray-800 px-3 py-2 align-top" {...p} />,
         }}
       >
         {children}

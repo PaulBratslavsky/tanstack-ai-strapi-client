@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useChat } from '@tanstack/ai-react'
 import { chatFn } from '@/lib/chat.functions'
@@ -32,9 +32,26 @@ function ChatPage() {
       }),
   })
 
+  // Follow the reply as it streams, but only while the reader is at the bottom:
+  // scrolling up to read an earlier answer stops the follow, and scrolling back
+  // down (or sending a message) resumes it. A ref, not state, so a scroll event
+  // does not re-render the whole message list.
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const followRef = useRef(true)
+  const onScroll = () => {
+    const el = scrollRef.current
+    if (!el) return
+    followRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  }
+  useEffect(() => {
+    const el = scrollRef.current
+    if (el && followRef.current) el.scrollTop = el.scrollHeight
+  }, [messages, error])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim() || isLoading) return
+    followRef.current = true
     // `body` is merged into the request's forwardedProps, which the chat
     // client mirrors onto the fetcher's `input.data`.
     void sendMessage(input, { body: { model } })
@@ -52,10 +69,14 @@ function ChatPage() {
         <ProviderPicker value={model} onChange={setModel} disabled={isLoading} />
       </header>
 
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className="flex-1 space-y-4 overflow-y-auto p-5 text-lg"
+      >
         <MessageList messages={messages} />
         {error && (
-          <div className="rounded-lg border border-red-700/60 bg-red-900/30 px-3 py-2 text-sm text-red-200">
+          <div className="rounded-lg border border-red-700/60 bg-red-900/30 px-4 py-3 text-base text-red-200">
             {error.message}
           </div>
         )}
@@ -67,17 +88,17 @@ function ChatPage() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Message..."
           disabled={isLoading}
-          className="flex-1 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
+          className="flex-1 rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-lg"
         />
         {isLoading ? (
-          <button type="button" onClick={stop} className="rounded-lg bg-red-600 px-4 py-2">
+          <button type="button" onClick={stop} className="rounded-lg bg-red-600 px-5 py-3 text-lg">
             Stop
           </button>
         ) : (
           <button
             type="submit"
             disabled={!input.trim()}
-            className="rounded-lg bg-cyan-600 px-4 py-2 disabled:opacity-50"
+            className="rounded-lg bg-cyan-600 px-5 py-3 text-lg disabled:opacity-50"
           >
             Send
           </button>

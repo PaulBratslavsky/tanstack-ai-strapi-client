@@ -33,7 +33,7 @@ function Part({ part, role }: { part: any; role: string }) {
 
   if (part.type === 'thinking') {
     return (
-      <details className="my-1 text-xs text-gray-400">
+      <details className="my-2 text-base text-gray-400">
         <summary className="cursor-pointer select-none">thinking</summary>
         <div className="mt-1 border-l border-gray-700 pl-2">
           <Markdown>{part.content}</Markdown>
@@ -53,7 +53,7 @@ function Part({ part, role }: { part: any; role: string }) {
       }
     }
     return (
-      <div className="my-1 rounded border border-amber-700/50 bg-amber-900/20 px-2 py-1 font-mono text-xs text-amber-200">
+      <div className="my-1 rounded border border-amber-700/50 bg-amber-900/20 px-3 py-2 font-mono text-sm text-amber-200">
         <span className="font-semibold">⚙ {part.name}</span>
         {part.state && part.state !== 'complete' && (
           <span className="ml-2 text-amber-400/70">{part.state}</span>
@@ -73,7 +73,7 @@ function Part({ part, role }: { part: any; role: string }) {
       typeof part.content === 'string' ? part.content : JSON.stringify(part.content)
     return (
       <details
-        className={`my-1 rounded border px-2 py-1 font-mono text-xs ${
+        className={`my-2 rounded border px-3 py-2 font-mono text-sm ${
           failed
             ? 'border-red-700/50 bg-red-900/20 text-red-200'
             : 'border-emerald-800/50 bg-emerald-900/15 text-emerald-200'
@@ -95,7 +95,7 @@ function Part({ part, role }: { part: any; role: string }) {
 
 export function MessageList({ messages }: { messages: Array<UIMessage> }) {
   if (messages.length === 0) {
-    return <p className="text-sm text-gray-500">Say something to start the chat.</p>
+    return <p className="text-lg text-gray-500">Say something to start the chat.</p>
   }
 
   return (
@@ -105,8 +105,8 @@ export function MessageList({ messages }: { messages: Array<UIMessage> }) {
           key={m.id}
           className={
             m.role === 'user'
-              ? 'ml-auto max-w-2xl rounded-lg border border-cyan-600/40 bg-cyan-700/20 px-3 py-2'
-              : 'mr-auto max-w-3xl rounded-lg border border-gray-700 bg-gray-800 px-3 py-2'
+              ? 'ml-auto max-w-3xl rounded-lg border border-cyan-600/40 bg-cyan-700/20 px-4 py-3'
+              : 'mr-auto max-w-4xl rounded-lg border border-gray-700 bg-gray-800 px-4 py-3'
           }
         >
           {m.parts.map((part, i) => (
