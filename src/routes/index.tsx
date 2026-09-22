@@ -34,14 +34,23 @@ function ChatPage() {
 
   // Follow the reply as it streams, but only while the reader is at the bottom:
   // scrolling up to read an earlier answer stops the follow, and scrolling back
-  // down (or sending a message) resumes it. A ref, not state, so a scroll event
+  // down (or sending a message) resumes it. Refs, not state, so a scroll event
   // does not re-render the whole message list.
+  //
+  // The follow stops on the DIRECTION of a scroll, not the distance from the
+  // bottom. Scroll events arrive after the frame that caused them, so a large
+  // chunk (a tool result, a long paragraph) can land in between and put the
+  // view far from the bottom without the reader moving at all. Measured by
+  // distance, that reads as "scrolled away" and silently ends the follow.
   const scrollRef = useRef<HTMLDivElement>(null)
   const followRef = useRef(true)
+  const lastTopRef = useRef(0)
   const onScroll = () => {
     const el = scrollRef.current
     if (!el) return
-    followRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+    if (el.scrollTop < lastTopRef.current - 2) followRef.current = false
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) followRef.current = true
+    lastTopRef.current = el.scrollTop
   }
   useEffect(() => {
     const el = scrollRef.current
