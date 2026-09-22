@@ -9,11 +9,11 @@ if (!token) throw new Error('STRAPI_MCP_TOKEN not set')
 
 const ARTICLES = [
   { title: 'Getting Started with TanStack AI', category: 'tutorial',
-    body: 'TanStack AI is a type-safe SDK for streaming chat, tool calling and agents. This walkthrough covers adapters, the chat() agent loop, and wiring useChat to a server function.' },
+    content: 'TanStack AI is a type-safe SDK for streaming chat, tool calling and agents. This walkthrough covers adapters, the chat() agent loop, and wiring useChat to a server function.' },
   { title: 'Strapi 5.52 Released', category: 'announcement',
-    body: 'Strapi 5.52 ships the official MCP server at /mcp, letting AI clients discover and call content tools over the Model Context Protocol using admin API tokens.' },
+    content: 'Strapi 5.52 ships the official MCP server at /mcp, letting AI clients discover and call content tools over the Model Context Protocol using admin API tokens.' },
   { title: 'Building MCP Servers', category: 'guide',
-    body: 'A guide to exposing your own tools over MCP: registering capabilities before the server starts, scoping them with permissions, and guarding oversized results.' },
+    content: 'A guide to exposing your own tools over MCP: registering capabilities before the server starts, scoping them with permissions, and guarding oversized results.' },
 ]
 
 const client = await createMCPClient({
