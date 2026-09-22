@@ -6,6 +6,7 @@ import { MessageList } from '@/components/MessageList'
 import { ProviderPicker } from '@/components/ProviderPicker'
 import { DEFAULT_MODEL_TOKEN } from '@/lib/model-token'
 import { McpConnectors, McpStatusBar } from '@/components/McpConnectors'
+import { WorkingIndicator } from '@/components/WorkingIndicator'
 
 export const Route = createFileRoute('/')({ component: ChatPage })
 
@@ -55,7 +56,7 @@ function ChatPage() {
   useEffect(() => {
     const el = scrollRef.current
     if (el && followRef.current) el.scrollTop = el.scrollHeight
-  }, [messages, error])
+  }, [messages, error, isLoading])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -84,6 +85,7 @@ function ChatPage() {
         className="flex-1 space-y-4 overflow-y-auto p-5 text-lg"
       >
         <MessageList messages={messages} />
+        {isLoading && <WorkingIndicator messages={messages} />}
         {error && (
           <div className="rounded-lg border border-red-700/60 bg-red-900/30 px-4 py-3 text-base text-red-200">
             {error.message}
@@ -100,7 +102,15 @@ function ChatPage() {
           className="flex-1 rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-lg"
         />
         {isLoading ? (
-          <button type="button" onClick={stop} className="rounded-lg bg-red-600 px-5 py-3 text-lg">
+          <button
+            type="button"
+            onClick={stop}
+            className="flex items-center gap-2 rounded-lg bg-red-600 px-5 py-3 text-lg"
+          >
+            <span
+              aria-hidden="true"
+              className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+            />
             Stop
           </button>
         ) : (
